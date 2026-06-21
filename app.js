@@ -10,6 +10,7 @@ const state = {
   selectedTables: new Set(),
   testQuestions: [],
   testIndex: 0,
+  testCorrectCount: 0,
   testPhase: "answer", // answer | reveal | done
   currentAnswer: "",
   lastCorrect: null
@@ -111,6 +112,7 @@ function startTest() {
   if (state.selectedTables.size === 0) return;
   state.testQuestions = makeQuestions();
   state.testIndex = 0;
+  state.testCorrectCount = 0;
   state.testPhase = "answer";
   state.currentAnswer = "";
   state.lastCorrect = null;
@@ -140,6 +142,7 @@ function submitTestAnswer() {
   state.lastCorrect = Number(state.currentAnswer) === q.answer;
 
   if (state.lastCorrect) {
+    state.testCorrectCount += 1;
     state.testPhase = "reveal";
   } else {
     state.currentAnswer = "";
@@ -156,6 +159,7 @@ function skipTestQuestion() {
 function restartTest() {
   state.testQuestions = makeQuestions();
   state.testIndex = 0;
+  state.testCorrectCount = 0;
   state.testPhase = "answer";
   state.currentAnswer = "";
   state.lastCorrect = null;
@@ -299,10 +303,12 @@ function selectAllTables() {
 
 function renderTestRun() {
   if (state.testPhase === "done") {
+    const total = state.testQuestions.length;
     app.innerHTML = shell(
       "Test complete",
-      "Great job! You finished 10 questions.",
+      `Great job! Your score is ${state.testCorrectCount}/${total}.`,
       `
+        <div class="score-card">${state.testCorrectCount}/${total}</div>
         <div class="actions">
           <button class="btn" onclick="restartTest()">Generate test questions again</button>
           <button class="btn ghost" onclick="home()">Back to homepage</button>
