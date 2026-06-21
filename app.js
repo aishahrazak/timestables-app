@@ -7,6 +7,9 @@ const state = {
   drillActive: false,
   drillLine: null,
   drillAnswerShown: false,
+  drillCorrectCount: 0,
+  drillAnsweredCount: 0,
+  drillScoreShown: false,
   selectedTables: new Set(),
   testQuestions: [],
   testIndex: 0,
@@ -42,6 +45,7 @@ function home() {
   state.drillActive = false;
   state.drillLine = null;
   state.drillAnswerShown = false;
+  state.drillScoreShown = false;
   render();
 }
 
@@ -70,15 +74,22 @@ function newDrillLine() {
 
 function startDrill() {
   state.drillActive = true;
+  state.drillCorrectCount = 0;
+  state.drillAnsweredCount = 0;
+  state.drillScoreShown = false;
   newDrillLine();
   render();
   setTimeout(focusAnswer, 50);
 }
 
 function checkDrill() {
+  if (state.drillAnswerShown || state.currentAnswer.trim() === "") return;
+
   const correct = state.learnNumber * state.drillLine;
   const entered = Number(state.currentAnswer);
   state.lastCorrect = entered === correct;
+  state.drillAnsweredCount += 1;
+  if (state.lastCorrect) state.drillCorrectCount += 1;
   state.drillAnswerShown = true;
   render();
 }
@@ -87,6 +98,16 @@ function nextDrill() {
   newDrillLine();
   render();
   setTimeout(focusAnswer, 50);
+}
+
+function quitDrill() {
+  state.drillActive = false;
+  state.drillLine = null;
+  state.drillAnswerShown = false;
+  state.currentAnswer = "";
+  state.lastCorrect = null;
+  state.drillScoreShown = true;
+  render();
 }
 
 function makeQuestions() {
@@ -212,7 +233,7 @@ function renderHome() {
 
 function renderLearnPick() {
   const grid = tableNumbers().map(n => `
-    <button class="number-btn" onclick="go('learnTable', { learnNumber: ${n}, drillActive: false, drillLine: null })">${n}</button>
+    <button class="number-btn" onclick="go('learnTable', { learnNumber: ${n}, drillActive: false, drillLine: null, drillScoreShown: false })">${n}</button>
   `).join("");
 
   app.innerHTML = shell(
@@ -243,8 +264,9 @@ function renderLearnTable() {
         <div class="feedback ${state.lastCorrect ? "good" : "bad"}">
           ${state.lastCorrect ? "Correct!" : `The right answer is ${n * state.drillLine}.`}
         </div>
-        <div class="actions">
-          <button class="btn" onclick="nextDrill()">Next blank</button>
+        <div class="actions two">
+          <button class="btn" onclick="nextDrill()">Next</button>
+          <button class="btn ghost" onclick="quitDrill()">Quit</button>
         </div>
       ` : `
         <div class="answer-row">
@@ -255,10 +277,17 @@ function renderLearnTable() {
     </div>
   ` : "";
 
+  const drillScore = state.drillScoreShown ? `
+    <div class="drill-box">
+      <div class="feedback good">Memory Drill score</div>
+      <div class="score-card">${state.drillCorrectCount}/${state.drillAnsweredCount}</div>
+    </div>
+  ` : "";
+
   app.innerHTML = shell(
     `Table ${n}`,
     state.drillActive ? "Fill in the missing answer. Press Back to stop the drill." : "Read through the times table, then start a memory drill.",
-    `<div class="table-list">${lines}</div>${drillPanel}`,
+    `<div class="table-list">${lines}</div>${drillPanel}${drillScore}`,
     {
       descriptionAction: state.drillActive
         ? ""
@@ -310,8 +339,8 @@ function renderTestRun() {
       `
         <div class="score-card">${state.testCorrectCount}/${total}</div>
         <div class="actions">
-          <button class="btn" onclick="restartTest()">Generate test questions again</button>
-          <button class="btn ghost" onclick="home()">Back to homepage</button>
+          <button class="btn" onclick="restartTest()">Test again</button>
+          <button class="btn ghost" onclick="home()">Back</button>
         </div>
       `
     );

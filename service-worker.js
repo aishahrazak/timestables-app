@@ -1,9 +1,9 @@
-const CACHE_NAME = "times-tables-v5";
+const CACHE_NAME = "times-tables-v7";
 const FILES = [
   "./",
   "./index.html",
-  "./styles.css?v=5",
-  "./app.js?v=5",
+  "./styles.css?v=7",
+  "./app.js?v=7",
   "./manifest.json",
   "./icon-180.png",
   "./icon-512.png"
