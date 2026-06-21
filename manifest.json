@@ -1,0 +1,23 @@
+{
+  "name": "Times Tables",
+  "short_name": "Times Tables",
+  "description": "A simple multiplication table learning, memory drill, and test app.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fff7e6",
+  "theme_color": "#8FD3F4",
+  "icons": [
+    {
+      "src": "icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
