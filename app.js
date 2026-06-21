@@ -7,9 +7,13 @@ const state = {
   drillActive: false,
   drillLine: null,
   drillAnswerShown: false,
+  drillCorrectCount: 0,
+  drillAnsweredCount: 0,
+  drillScoreShown: false,
   selectedTables: new Set(),
   testQuestions: [],
   testIndex: 0,
+  testCorrectCount: 0,
   testPhase: "answer", // answer | reveal | done
   currentAnswer: "",
   lastCorrect: null
@@ -41,6 +45,7 @@ function home() {
   state.drillActive = false;
   state.drillLine = null;
   state.drillAnswerShown = false;
+  state.drillScoreShown = false;
   render();
 }
 
@@ -69,15 +74,22 @@ function newDrillLine() {
 
 function startDrill() {
   state.drillActive = true;
+  state.drillCorrectCount = 0;
+  state.drillAnsweredCount = 0;
+  state.drillScoreShown = false;
   newDrillLine();
   render();
   setTimeout(focusAnswer, 50);
 }
 
 function checkDrill() {
+  if (state.drillAnswerShown || state.currentAnswer.trim() === "") return;
+
   const correct = state.learnNumber * state.drillLine;
   const entered = Number(state.currentAnswer);
   state.lastCorrect = entered === correct;
+  state.drillAnsweredCount += 1;
+  if (state.lastCorrect) state.drillCorrectCount += 1;
   state.drillAnswerShown = true;
   render();
 }
@@ -86,6 +98,16 @@ function nextDrill() {
   newDrillLine();
   render();
   setTimeout(focusAnswer, 50);
+}
+
+function quitDrill() {
+  state.drillActive = false;
+  state.drillLine = null;
+  state.drillAnswerShown = false;
+  state.currentAnswer = "";
+  state.lastCorrect = null;
+  state.drillScoreShown = true;
+  render();
 }
 
 function makeQuestions() {
@@ -111,6 +133,7 @@ function startTest() {
   if (state.selectedTables.size === 0) return;
   state.testQuestions = makeQuestions();
   state.testIndex = 0;
+  state.testCorrectCount = 0;
   state.testPhase = "answer";
   state.currentAnswer = "";
   state.lastCorrect = null;
@@ -140,6 +163,7 @@ function submitTestAnswer() {
   state.lastCorrect = Number(state.currentAnswer) === q.answer;
 
   if (state.lastCorrect) {
+    state.testCorrectCount += 1;
     state.testPhase = "reveal";
   } else {
     state.currentAnswer = "";
@@ -156,6 +180,7 @@ function skipTestQuestion() {
 function restartTest() {
   state.testQuestions = makeQuestions();
   state.testIndex = 0;
+  state.testCorrectCount = 0;
   state.testPhase = "answer";
   state.currentAnswer = "";
   state.lastCorrect = null;
@@ -208,7 +233,7 @@ function renderHome() {
 
 function renderLearnPick() {
   const grid = tableNumbers().map(n => `
-    <button class="number-btn" onclick="go('learnTable', { learnNumber: ${n}, drillActive: false, drillLine: null })">${n}</button>
+    <button class="number-btn" onclick="go('learnTable', { learnNumber: ${n}, drillActive: false, drillLine: null, drillScoreShown: false })">${n}</button>
   `).join("");
 
   app.innerHTML = shell(
@@ -239,8 +264,9 @@ function renderLearnTable() {
         <div class="feedback ${state.lastCorrect ? "good" : "bad"}">
           ${state.lastCorrect ? "Correct!" : `The right answer is ${n * state.drillLine}.`}
         </div>
-        <div class="actions">
-          <button class="btn" onclick="nextDrill()">Next blank</button>
+        <div class="actions two">
+          <button class="btn" onclick="nextDrill()">Next</button>
+          <button class="btn ghost" onclick="quitDrill()">Quit</button>
         </div>
       ` : `
         <div class="answer-row">
@@ -251,10 +277,17 @@ function renderLearnTable() {
     </div>
   ` : "";
 
+  const drillScore = state.drillScoreShown ? `
+    <div class="drill-box">
+      <div class="feedback good">Memory Drill score</div>
+      <div class="score-card">${state.drillCorrectCount}/${state.drillAnsweredCount}</div>
+    </div>
+  ` : "";
+
   app.innerHTML = shell(
     `Table ${n}`,
     state.drillActive ? "Fill in the missing answer. Press Back to stop the drill." : "Read through the times table, then start a memory drill.",
-    `<div class="table-list">${lines}</div>${drillPanel}`,
+    `<div class="table-list">${lines}</div>${drillPanel}${drillScore}`,
     {
       descriptionAction: state.drillActive
         ? ""
@@ -299,13 +332,15 @@ function selectAllTables() {
 
 function renderTestRun() {
   if (state.testPhase === "done") {
+    const total = state.testQuestions.length;
     app.innerHTML = shell(
       "Test complete",
-      "Great job! You finished 10 questions.",
+      `Great job! Your score is ${state.testCorrectCount}/${total}.`,
       `
+        <div class="score-card">${state.testCorrectCount}/${total}</div>
         <div class="actions">
-          <button class="btn" onclick="restartTest()">Generate test questions again</button>
-          <button class="btn ghost" onclick="home()">Back to homepage</button>
+          <button class="btn" onclick="restartTest()">Test again</button>
+          <button class="btn ghost" onclick="home()">Back</button>
         </div>
       `
     );
